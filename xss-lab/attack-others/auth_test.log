@@ -1,0 +1,12 @@
+2025-02-21 10:14:00,755 - INFO - Starting authentication security testing
+2025-02-21 10:15:11,721 - INFO - Starting authentication security testing
+2025-02-21 10:16:06,884 - ERROR - Authentication error: HTTPConnectionPool(host='10.1.1.10', port=5001): Max retries exceeded with url: /login (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x105029930>, 'Connection to 10.1.1.10 timed out. (connect timeout=5)'))
+2025-02-21 10:16:06,886 - INFO - Original credentials test: {'error': "HTTPConnectionPool(host='10.1.1.10', port=5001): Max retries exceeded with url: /login (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x105029930>, 'Connection to 10.1.1.10 timed out. (connect timeout=5)'))"}
+2025-02-21 10:16:11,890 - ERROR - Authentication error: HTTPConnectionPool(host='10.1.1.10', port=5001): Max retries exceeded with url: /login (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x10502a620>, 'Connection to 10.1.1.10 timed out. (connect timeout=5)'))
+2025-02-21 10:16:17,903 - ERROR - Authentication error: HTTPConnectionPool(host='10.1.1.10', port=5001): Max retries exceeded with url: /login (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x10502a9b0>, 'Connection to 10.1.1.10 timed out. (connect timeout=5)'))
+2025-02-21 10:16:47,035 - ERROR - Authentication error: HTTPConnectionPool(host='10.1.1.10', port=5001): Read timed out. (read timeout=5)
+2025-02-21 10:16:47,036 - INFO - Original credentials test: {'error': "HTTPConnectionPool(host='10.1.1.10', port=5001): Read timed out. (read timeout=5)"}
+2025-02-21 10:16:52,058 - ERROR - Authentication error: HTTPConnectionPool(host='10.1.1.10', port=5001): Read timed out. (read timeout=5)
+2025-02-21 10:19:47,698 - ERROR - Authentication error: HTTPConnectionPool(host='10.1.1.10', port=5001): Read timed out. (read timeout=5)
+2025-02-21 10:19:47,699 - INFO - Original credentials test: {'error': "HTTPConnectionPool(host='10.1.1.10', port=5001): Read timed out. (read timeout=5)"}
+2025-02-21 10:19:52,783 - ERROR - Authentication error: HTTPConnectionPool(host='10.1.1.10', port=5001): Read timed out. (read timeout=5)
