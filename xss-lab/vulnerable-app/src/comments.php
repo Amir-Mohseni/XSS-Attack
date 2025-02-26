@@ -25,7 +25,7 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['user_session'])) {
 }
 
 if (!isset($_SESSION['user_id'])) {
-    die('Not logged in');
+    die('Not logged in. <a href="index.php">Return to homepage</a>');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Debug output
     error_log("Debug - User ID: $user_id");
-    error_log("Debug - Session: " . print_r($_SESSION, true));
+    error_log("Debug - Content: $content");
     
     // Verify user exists
     $check_user = $mysqli->query("SELECT id FROM users WHERE id = $user_id");
@@ -53,12 +53,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $query = "INSERT INTO comments (user_id, content) VALUES ($user_id, '$content')";
     error_log("Debug - SQL Query: $query");
     
-    if (!$mysqli->query($query)) {
-        die('Error saving comment: ' . $mysqli->error . 
-            '<br>Query: ' . $query . 
-            '<br>User ID: ' . $user_id);
+    try {
+        if (!$mysqli->query($query)) {
+            die('Error saving comment: ' . $mysqli->error . 
+                '<br>Query: ' . $query . 
+                '<br>User ID: ' . $user_id);
+        }
+        
+        header('Location: index.php');
+        exit();
+    } catch (Exception $e) {
+        die('Error: ' . $e->getMessage());
     }
-    
-    header('Location: index.php');
-    exit();
 } 

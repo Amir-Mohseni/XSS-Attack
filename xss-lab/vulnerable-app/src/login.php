@@ -85,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <li><code>admin'-- -</code> (note the space after --)</li>
                     <li><code>' OR 1=1-- -</code></li>
                     <li><code>' OR '1'='1</code></li>
+                    <li>Or use default admin/admin123</li>
                 </ul>
             </div>
         </div>

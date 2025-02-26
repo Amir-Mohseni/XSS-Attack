@@ -2,6 +2,10 @@
 session_start();
 require_once 'db.php';
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Check if user is logged in via session or cookie
 $logged_in = isset($_SESSION['user_id']);
 
@@ -42,7 +46,7 @@ if ($logged_in) {
             <h1>Welcome to Our Comment System</h1>
             <p>Please login or signup to continue.</p>
             
-            <div class="auth-links" style="margin-top: 30px;">
+            <div class="auth-links" style="margin-top: 30px; text-align: center;">
                 <a href="login.php" class="auth-button">Login</a>
                 <a href="signup.php" class="auth-button">Sign Up</a>
             </div>
@@ -63,28 +67,32 @@ if ($logged_in) {
             <div class="comments">
                 <h2>Comments</h2>
                 <?php
-                // Updated query to match schema and show all fields
-                $query = "SELECT c.*, u.username 
-                          FROM comments c 
-                          JOIN users u ON c.user_id = u.id 
-                          ORDER BY c.created_at DESC";
-                $result = $mysqli->query($query);
-                
-                if ($result === false) {
-                    echo "<p>Error loading comments: " . $mysqli->error . "</p>";
-                } else {
-                    if ($result->num_rows == 0) {
-                        echo "<p>No comments yet.</p>";
+                try {
+                    // Updated query to match schema and show all fields
+                    $query = "SELECT c.*, u.username 
+                              FROM comments c 
+                              JOIN users u ON c.user_id = u.id 
+                              ORDER BY c.created_at DESC";
+                    $result = $mysqli->query($query);
+                    
+                    if ($result === false) {
+                        echo "<p>Error loading comments: " . $mysqli->error . "</p>";
                     } else {
-                        while ($row = $result->fetch_assoc()) {
-                            echo "<div class='comment'>";
-                            echo "<h3>" . htmlspecialchars($row['username']) . "</h3>";
-                            // Intentionally vulnerable to XSS
-                            echo "<p>" . $row['content'] . "</p>";
-                            echo "<small>Posted on " . $row['created_at'] . "</small>";
-                            echo "</div>";
+                        if ($result->num_rows == 0) {
+                            echo "<p>No comments yet.</p>";
+                        } else {
+                            while ($row = $result->fetch_assoc()) {
+                                echo "<div class='comment'>";
+                                echo "<h3>" . htmlspecialchars($row['username']) . "</h3>";
+                                // Intentionally vulnerable to XSS
+                                echo "<p>" . $row['content'] . "</p>";
+                                echo "<small>Posted on " . $row['created_at'] . "</small>";
+                                echo "</div>";
+                            }
                         }
                     }
+                } catch (Exception $e) {
+                    echo "<p>Error: " . $e->getMessage() . "</p>";
                 }
                 ?>
             </div>
