@@ -9,47 +9,59 @@ ini_set('display_errors', 1);
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
     
-    // Check if username exists
-    $check_query = "SELECT * FROM users WHERE username='$username'";
-    $result = $mysqli->query($check_query);
-    
-    if ($result === false) {
-        $error = "Database error: " . $mysqli->error;
-    } else if ($result->num_rows > 0) {
-        $error = "Username already exists";
+    // Validate input
+    if (empty($username) || empty($password)) {
+        $error = "Username and password are required";
+    } else if (strlen($password) < 6) {
+        $error = "Password must be at least 6 characters long";
     } else {
-        // Vulnerable: Direct SQL injection possible
-        $query = "INSERT INTO users (username, password) VALUES ('$username', '$password')";
+        // Check if username exists using prepared statement
+        $check_query = "SELECT * FROM users WHERE username = ?";
+        $result = db_query($check_query, "s", [$username]);
         
-        if ($mysqli->query($query)) {
-            // Get the newly created user's ID
-            $user_id = (int)$mysqli->insert_id;
-            
-            // Debug output
-            error_log("Debug - New user created - ID: $user_id, Username: $username");
-            
-            // Set session variables
-            $_SESSION['user_id'] = $user_id;
-            $_SESSION['username'] = $username;
-            
-            // Set vulnerable cookie
-            setcookie('user_session', $user_id, time() + 3600, '/', '', false, false);
-            
-            // Debug output
-            error_log("Debug - Session after signup: " . print_r($_SESSION, true));
-            
-            // Verify user was created
-            $verify_query = "SELECT * FROM users WHERE id = $user_id";
-            $verify_result = $mysqli->query($verify_query);
-            error_log("Debug - Verify user exists: " . ($verify_result->num_rows > 0 ? "Yes" : "No"));
-            
-            header('Location: index.php');
-            exit();
+        if ($result === false) {
+            $error = "Database error: Please try again later";
+        } else if (!empty($result)) {
+            $error = "Username already exists";
         } else {
-            $error = "Error creating account: " . $mysqli->error;
+            // Hash password
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            
+            // Insert user with prepared statement
+            $query = "INSERT INTO users (username, password) VALUES (?, ?)";
+            $insert_result = db_query($query, "ss", [$username, $hashed_password]);
+            
+            if ($insert_result === false) {
+                $error = "Error creating account. Please try again.";
+            } else {
+                // Get the newly created user's ID
+                $user_id = $insert_result['insert_id'];
+                
+                // Debug output
+                error_log("Debug - New user created - ID: $user_id, Username: $username");
+                
+                // Set session variables
+                $_SESSION['user_id'] = $user_id;
+                $_SESSION['username'] = $username;
+                
+                // Set secure cookie
+                setcookie('user_session', $user_id, [
+                    'expires' => time() + 3600,
+                    'path' => '/',
+                    'secure' => true,
+                    'httponly' => true,
+                    'samesite' => 'Strict'
+                ]);
+                
+                // Debug output
+                error_log("Debug - Session after signup: " . print_r($_SESSION, true));
+                
+                header('Location: index.php');
+                exit();
+            }
         }
     }
 }
@@ -58,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sign Up - Vulnerable App</title>
+    <title>Sign Up - Secure App</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -66,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="auth-form">
             <h1>Sign Up</h1>
             <?php if ($error): ?>
-                <div class="error-message"><?php echo $error; ?></div>
+                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             
             <form method="POST" action="signup.php">
@@ -77,7 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-group">
                     <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" required minlength="6">
+                    <small>Password must be at least 6 characters long</small>
                 </div>
                 
                 <button type="submit">Sign Up</button>

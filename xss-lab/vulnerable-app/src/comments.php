@@ -10,12 +10,12 @@ ini_set('display_errors', 1);
 if (!isset($_SESSION['user_id']) && isset($_COOKIE['user_session'])) {
     $user_id = (int)$_COOKIE['user_session'];
     
-    // Verify user exists
-    $query = "SELECT * FROM users WHERE id = $user_id";
-    $result = $mysqli->query($query);
+    // Verify user exists with prepared statement
+    $query = "SELECT * FROM users WHERE id = ?";
+    $result = db_query($query, "i", [$user_id]);
     
-    if ($result && $result->num_rows > 0) {
-        $user = $result->fetch_assoc();
+    if (!empty($result)) {
+        $user = $result[0];
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
         
@@ -29,8 +29,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!isset($_POST['content'])) {
-        die('Missing required fields');
+    if (!isset($_POST['content']) || trim($_POST['content']) === '') {
+        die('Comment content is required');
     }
 
     $content = $_POST['content'];
@@ -40,29 +40,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     error_log("Debug - User ID: $user_id");
     error_log("Debug - Content: $content");
     
-    // Verify user exists
-    $check_user = $mysqli->query("SELECT id FROM users WHERE id = $user_id");
-    if (!$check_user || $check_user->num_rows === 0) {
+    // Verify user exists with prepared statement
+    $check_query = "SELECT id FROM users WHERE id = ?";
+    $check_result = db_query($check_query, "i", [$user_id]);
+    
+    if (empty($check_result)) {
         die("Error: Invalid user ID. Please log in again.");
     }
     
-    // Escape the content string but keep it vulnerable to XSS
-    $content = $mysqli->real_escape_string($content);
+    // Insert comment with prepared statement
+    $query = "INSERT INTO comments (user_id, content) VALUES (?, ?)";
+    $result = db_query($query, "is", [$user_id, $content]);
     
-    // Vulnerable: SQL injection still possible through user_id (intentional)
-    $query = "INSERT INTO comments (user_id, content) VALUES ($user_id, '$content')";
-    error_log("Debug - SQL Query: $query");
-    
-    try {
-        if (!$mysqli->query($query)) {
-            die('Error saving comment: ' . $mysqli->error . 
-                '<br>Query: ' . $query . 
-                '<br>User ID: ' . $user_id);
-        }
-        
-        header('Location: index.php');
-        exit();
-    } catch (Exception $e) {
-        die('Error: ' . $e->getMessage());
+    if ($result === false) {
+        die('Error saving comment. Please try again.');
     }
+    
+    header('Location: index.php');
+    exit();
 } 

