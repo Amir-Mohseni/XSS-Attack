@@ -1,0 +1,21 @@
+2025-02-28 09:02:57,634 - ERROR - Error detecting form fields: HTTPConnectionPool(host='10.1.2.62', port=3000): Max retries exceeded with url: /login.html (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x105f7fe20>, 'Connection to 10.1.2.62 timed out. (connect timeout=5)'))
+2025-02-28 09:02:57,636 - INFO - Using default field names: username/password
+2025-02-28 09:03:02,642 - ERROR - Authentication error: HTTPConnectionPool(host='10.1.2.62', port=3000): Max retries exceeded with url: /login.html (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x105f20430>, 'Connection to 10.1.2.62 timed out. (connect timeout=5)'))
+2025-02-28 09:03:08,153 - ERROR - Authentication error: HTTPConnectionPool(host='10.1.2.62', port=3000): Max retries exceeded with url: /login.html (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x105f20760>, 'Connection to 10.1.2.62 timed out. (connect timeout=5)'))
+2025-02-28 09:04:33,381 - INFO - Detected username field: username
+2025-02-28 09:04:33,381 - INFO - Detected password field: password
+2025-02-28 09:04:33,381 - INFO - Form action: Same URL
+2025-02-28 09:09:31,734 - INFO - Detected username field: username
+2025-02-28 09:09:31,735 - INFO - Detected password field: password
+2025-02-28 09:09:31,735 - INFO - Form action: Same URL
+2025-02-28 09:20:11,329 - INFO - Detected username field: username
+2025-02-28 09:20:11,330 - INFO - Detected password field: password
+2025-02-28 09:20:11,330 - INFO - Form action: Same URL
+2025-02-28 09:27:54,818 - INFO - Detected username field: username
+2025-02-28 09:27:54,819 - INFO - Detected password field: password
+2025-02-28 09:27:54,819 - INFO - Form action: Same URL
+2025-02-28 09:27:55,841 - WARNING - Valid credentials found: admin:admin
+2025-02-28 09:29:35,878 - INFO - Detected username field: username
+2025-02-28 09:29:35,878 - INFO - Detected password field: password
+2025-02-28 09:29:35,878 - INFO - Form action: Same URL
+2025-02-28 09:29:36,189 - WARNING - Valid credentials found: admin:admin
