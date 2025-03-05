@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robust Miner Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        h1 {
+            color: #333;
+        }
+        .stats {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.stop {
+            background-color: #f44336;
+        }
+        button.stop:hover {
+            background-color: #d32f2f;
+        }
+        #console {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Robust Miner Test Page</h1>
+        <p>This page tests the robust miner script to ensure it properly logs mining activity.</p>
+        
+        <div class="stats">
+            <h2>Mining Statistics</h2>
+            <p>Status: <span id="status">Initializing...</span></p>
+            <p>Hashes: <span id="hashes">0</span></p>
+            <p>Rate: <span id="rate">0</span> H/s</p>
+            <p>Elapsed Time: <span id="elapsed">0</span> seconds</p>
+        </div>
+        
+        <div>
+            <button id="startBtn">Start Mining</button>
+            <button id="stopBtn" class="stop">Stop Mining</button>
+            <button id="reportBtn">Force Report</button>
+            <button id="clearBtn">Clear Console</button>
+        </div>
+        
+        <h2>Console Output</h2>
+        <div id="console"></div>
+    </div>
+
+    <script>
+        // Override console.log to display in our console div
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function() {
+            const args = Array.from(arguments);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg) : arg
+            ).join(' ');
+            
+            const consoleDiv = document.getElementById('console');
+            consoleDiv.innerHTML += `<div>[LOG] ${message}</div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            
+            originalLog.apply(console, arguments);
+        };
+        
+        console.error = function() {
+            const args = Array.from(arguments);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg) : arg
+            ).join(' ');
+            
+            const consoleDiv = document.getElementById('console');
+            consoleDiv.innerHTML += `<div style="color: #ff6b6b;">[ERROR] ${message}</div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            
+            originalError.apply(console, arguments);
+        };
+        
+        // Set a fake cookie for testing
+        document.cookie = "user_session=test_user; path=/";
+        
+        // Function to update stats display
+        function updateStats() {
+            if (window.robustMiner) {
+                const stats = window.robustMiner.getStats();
+                document.getElementById('status').textContent = stats.active ? 'Mining' : 'Stopped';
+                document.getElementById('hashes').textContent = stats.hashes;
+                document.getElementById('rate').textContent = stats.rate;
+                document.getElementById('elapsed').textContent = stats.elapsed;
+            } else {
+                document.getElementById('status').textContent = 'Miner not loaded';
+            }
+        }
+        
+        // Update stats every second
+        setInterval(updateStats, 1000);
+        
+        // Add event listeners to buttons
+        document.getElementById('startBtn').addEventListener('click', function() {
+            if (window.robustMiner) {
+                window.robustMiner.start();
+                console.log('Mining started manually');
+            } else {
+                console.error('Miner not loaded yet');
+            }
+        });
+        
+        document.getElementById('stopBtn').addEventListener('click', function() {
+            if (window.robustMiner) {
+                window.robustMiner.stop();
+                console.log('Mining stopped manually');
+            } else {
+                console.error('Miner not loaded yet');
+            }
+        });
+        
+        document.getElementById('reportBtn').addEventListener('click', function() {
+            if (window.sendMiningReport) {
+                window.sendMiningReport();
+                console.log('Mining report sent manually');
+            } else {
+                console.error('Report function not available');
+            }
+        });
+        
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            document.getElementById('console').innerHTML = '';
+        });
+        
+        // Load the robust miner script
+        console.log('Loading robust miner script...');
+        const script = document.createElement('script');
+        script.src = 'robust_miner.js';
+        script.onload = function() {
+            console.log('Robust miner script loaded successfully');
+            updateStats();
+        };
+        script.onerror = function() {
+            console.error('Failed to load robust miner script');
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html> 

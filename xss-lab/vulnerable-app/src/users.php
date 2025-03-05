@@ -1,14 +1,31 @@
 <?php
 require_once 'db.php';
 
-// Create users table if it doesn't exist
-$query = "CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)";
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-if (!$mysqli->query($query)) {
-    die("Error creating users table: " . $mysqli->error);
-} 
+// Allow CORS for the attacker server
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Get user ID from query parameter
+$user_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+if ($user_id > 0) {
+    // Query to get username by ID
+    $query = "SELECT username FROM users WHERE id = $user_id";
+    $result = $mysqli->query($query);
+    
+    if ($result && $result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        // Return username in a simple XML format
+        echo "<username>" . htmlspecialchars($user['username']) . "</username>";
+    } else {
+        echo "<username>unknown</username>";
+    }
+} else {
+    echo "<username>invalid_id</username>";
+}
+?> 
